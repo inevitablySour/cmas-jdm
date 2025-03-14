@@ -45,3 +45,15 @@ The **CMAS AI Motion Tracking System** is a Java-based application that helps do
 
 ### Steps:
 1. Clone this repository:
+
+   git clone https://github.com/your-repo/cmas-ai-tracking.git
+   
+2. Install dependencies:
+
+   cd cmas-ai-tracking
+   ./install_dependencies.sh  # (or manually set up OpenCV, TensorFlow, SQLite)
+
+3. Run the application:
+   java -jar CMAS_Tracking.jar
+
+
