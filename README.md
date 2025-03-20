@@ -20,7 +20,7 @@ The **CMAS AI Motion Tracking System** is a Java-based application that helps do
 | **GUI**           | JavaFX |
 
 ## How It Works
-### 📱 Patient Workflow (Children’s Interface)
+### Patient Workflow (Children’s Interface)
 1. **Home Screen**: Displays upcoming CMAS tests and past performance.
 2. **Exercise Test**:
    - Shows a **video or animation** demonstrating the required movement.
@@ -36,12 +36,12 @@ The **CMAS AI Motion Tracking System** is a Java-based application that helps do
    - Provides AI-generated movement insights.
 4. **Export Data**: Allows generating **progress reports for medical records**.
 
-## 🏗Installation & Setup
+## Installation & Setup
 ### Prerequisites:
 - Java (JDK 17 or later)
 - OpenCV for Java
 - TensorFlow for Java (PoseNet or MediaPipe)
-- MySQL for database management
+- SQLite for database management
 
 
 
