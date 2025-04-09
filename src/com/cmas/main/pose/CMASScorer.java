@@ -1,128 +1,140 @@
 package com.cmas.main.pose;
 
-import java.util.Map;
+import com.google.gson.*;
+import java.io.*;
+import java.net.*;
+import java.util.*;
+
 
 public class CMASScorer {
 
-    /**
-     * Calculate the CMAS score based on extracted pose data.
-     * @param poseData Map of pose keypoints (x, y, z) coordinates.
-     * @return CMAS score
-     */
-    public static int calculateScore(Map<String, Map<String, Double>> poseData) {
-        int score = 0;
-
-        // Example: Check if the patient can lift their arms
-        score += assessArmLifting(poseData);
-        score += assessLegLifting(poseData);
-        score += assessStandingUp(poseData);
-        score += assessKneeling(poseData);
-        score += assessObjectPickup(poseData);
-
-        return score;
+    // 1. Head Lift (Neck Flexion)
+    public static int scoreHeadElevation(double seconds) {
+        if (seconds < 1) return 0;
+        if (seconds < 10) return 1;
+        if (seconds < 30) return 2;
+        if (seconds < 60) return 3;
+        if (seconds < 120) return 4;
+        return 5;
     }
 
-    /**
-     * Assess arm lifting ability based on shoulder and wrist height difference.
-     */
-    private static int assessArmLifting(Map<String, Map<String, Double>> poseData) {
-        try {
-            double shoulderY = poseData.get("point_11").get("y"); // Left shoulder
-            double wristY = poseData.get("point_15").get("y"); // Left wrist
 
-            double shoulderY2 = poseData.get("point_12").get("y"); // Right shoulder
-            double wristY2 = poseData.get("point_16").get("y"); // Right wrist
 
-            // If wrist is higher than shoulder (lower y-value in image), full score (5)
-            if (wristY < shoulderY && wristY2 < shoulderY2) {
-                return 5;
-            }
-            return 2; // Partial movement
-        } catch (Exception e) {
-            return 0; // No valid data
-        }
+    // 2. Leg Raise / Touch Object
+    public static int scoreLegRaise(boolean clearsTable, boolean touchesObject) {
+        if (!clearsTable) return 0;
+        if (!touchesObject) return 1;
+        return 2;
     }
 
-    /**
-     * Assess leg lifting ability based on hip and ankle height.
-     */
-    private static int assessLegLifting(Map<String, Map<String, Double>> poseData) {
-        try {
-            double hipY = poseData.get("point_23").get("y"); // Left hip
-            double ankleY = poseData.get("point_27").get("y"); // Left ankle
 
-            double hipY2 = poseData.get("point_24").get("y"); // Right hip
-            double ankleY2 = poseData.get("point_28").get("y"); // Right ankle
 
-            // If ankle is lifted above hip height, full score (5)
-            if (ankleY < hipY && ankleY2 < hipY2) {
-                return 5;
-            }
-            return 2; // Partial movement
-        } catch (Exception e) {
-            return 0;
-        }
+    // 3. Straight Leg Lift / Duration
+    public static int scoreLegLiftDuration(double seconds) {
+        if (seconds < 1) return 0;
+        if (seconds < 10) return 1;
+        if (seconds < 30) return 2;
+        if (seconds < 60) return 3;
+        if (seconds < 120) return 4;
+        return 5;
     }
 
-    /**
-     * Assess ability to stand up from the floor based on hip and knee positions.
-     */
-    private static int assessStandingUp(Map<String, Map<String, Double>> poseData) {
-        try {
-            double kneeY = poseData.get("point_25").get("y"); // Left knee
-            double kneeY2 = poseData.get("point_26").get("y"); // Right knee
-            double hipY = poseData.get("point_23").get("y"); // Left hip
-            double hipY2 = poseData.get("point_24").get("y"); // Right hip
 
-            // If hip is significantly above knee (indicating standing), full score (10)
-            if (hipY < kneeY && hipY2 < kneeY2) {
-                return 10;
-            }
-            return 4; // Partial movement
-        } catch (Exception e) {
-            return 0;
-        }
+
+    // 4. Supine to Prone
+    public static int scoreSupineToProne(boolean rolledSide, boolean freedArm, boolean reachedProne, boolean clean) {
+        if (!rolledSide) return 0;
+        if (!freedArm || !reachedProne) return 1;
+        if (!clean) return 2;
+        return 3;
     }
 
-    /**
-     * Assess ability to kneel and maneuver on hands and knees.
-     */
-    private static int assessKneeling(Map<String, Map<String, Double>> poseData) {
-        try {
-            double kneeY = poseData.get("point_25").get("y"); // Left knee
-            double wristY = poseData.get("point_15").get("y"); // Left wrist
 
-            double kneeY2 = poseData.get("point_26").get("y"); // Right knee
-            double wristY2 = poseData.get("point_16").get("y"); // Right wrist
-
-            // If knees are close to the ground and hands are placed forward, full score (5)
-            if (kneeY > wristY && kneeY2 > wristY2) {
-                return 5;
-            }
-            return 2; // Partial movement
-        } catch (Exception e) {
-            return 0;
-        }
+    // 5. Sit-ups (0–6)
+    public static int scoreSitUps(int completedSitUps) {
+        return Math.max(0, Math.min(completedSitUps, 6));
     }
 
-    /**
-     * Assess ability to pick up an object based on hip and hand positions.
-     */
-    private static int assessObjectPickup(Map<String, Map<String, Double>> poseData) {
-        try {
-            double wristY = poseData.get("point_15").get("y"); // Left wrist
-            double ankleY = poseData.get("point_27").get("y"); // Left ankle
+    // 6. Supine to Sit
+    public static int scoreSupineToSit(boolean success, boolean struggled, long duration) {
+        if (!success) return 0;
+        if (duration > 7000 || struggled) return 1;
+        if (duration > 4000) return 2;
+        return 3;
+    }
 
-            double wristY2 = poseData.get("point_16").get("y"); // Right wrist
-            double ankleY2 = poseData.get("point_28").get("y"); // Right ankle
+    // 7. Arm Raise / Straighten
+    public static int scoreArmRaiseHeight(boolean aboveAC, boolean aboveHead, boolean elbowsStraight) {
+        if (!aboveAC) return 0;
+        if (!aboveHead) return 1;
+        if (!elbowsStraight) return 2;
+        return 3;
+    }
 
-            // If wrist is close to ankle (indicating reaching for an object), full score (5)
-            if (Math.abs(wristY - ankleY) < 0.1 && Math.abs(wristY2 - ankleY2) < 0.1) {
-                return 5;
-            }
-            return 2; // Partial movement
-        } catch (Exception e) {
-            return 0;
-        }
+    // 8. Arm Raise / Duration
+    public static int scoreArmRaiseDuration(double seconds) {
+        if (seconds < 1) return 0;
+        if (seconds < 10) return 1;
+        if (seconds < 30) return 2;
+        if (seconds < 60) return 3;
+        return 4;
+    }
+
+    // 9. Floor Sit
+    public static int scoreFloorSit(boolean reachedSit, boolean hesitant) {
+        if (!reachedSit) return 0;
+        if (hesitant) return 2;
+        return 3;
+    }
+
+    // 10. All Fours Maneuver
+    public static int scoreAllFours(boolean reachedAllFours, boolean raisedHead, boolean crawled, boolean legLifted) {
+        if (!reachedAllFours) return 0;
+        if (!raisedHead) return 1;
+        if (!crawled) return 2;
+        if (!legLifted) return 3;
+        return 4;
+    }
+
+    // 11. Floor Rise
+    public static int scoreFloorRise(boolean stoodUp, boolean usedHands, boolean struggled) {
+        if (!stoodUp) return 0;
+        if (usedHands) return 2;
+        if (struggled) return 3;
+        return 4;
+    }
+
+    // 12. Chair Rise
+    public static int scoreChairRise(boolean stoodUp, boolean usedChairSide, boolean usedThighs, boolean struggled) {
+        if (!stoodUp) return 0;
+        if (usedChairSide) return 1;
+        if (usedThighs) return 2;
+        if (struggled) return 3;
+        return 4;
+    }
+
+    // 13. Stool Step
+    public static int scoreStoolStep(boolean attempted, boolean usedSupport, boolean usedThigh, boolean completed) {
+        if (!attempted) return 0;
+        if (usedSupport) return 1;
+        if (usedThigh) return 2;
+        if (completed) return 3;
+        return 1; // fallback if completed condition failed but attempted was true
+    }
+
+    // 14. Pick-up Object
+
+    public static int scorePickUpObject(boolean attempted, boolean heavySupport, boolean lightSupport, boolean completed) {
+        if (!attempted || !completed) return 0;
+        if (heavySupport) return 1;
+        if (lightSupport) return 2;
+        return 3;
+    }
+
+    // Sum all scores
+    public static int totalScore(int... scores) {
+        int sum = 0;
+        for (int score : scores) sum += score;
+        return sum;
     }
 }
