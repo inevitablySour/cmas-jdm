@@ -1,22 +1,35 @@
 package com.cmas.main.dao;
 
+import java.io.IOException;
 import java.sql.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 
 public class DatabaseController {
-    private static final String DB_URL = "jdbc:mysql://localhost:3306/cmas-scoring"; // change this
-    private static final String USER = "root"; // change this
-    private static final String PASSWORD = "Newtonsappl3"; // change this
+    private static final String DB_URL;
+    private static Connection conn;
 
-    private Connection conn;
+    static {
+        try {
+            Properties props = Encrypt.loadDecryptedConfig("src/resources/config.enc");
 
-    public DatabaseController() throws SQLException {
-        conn = DriverManager.getConnection(DB_URL, USER, PASSWORD);
+            DB_URL = props.getProperty("db.url");
+
+            if (DB_URL == null || DB_URL.isEmpty()) {
+                throw new RuntimeException("db.url not found in decrypted config");
+            }
+
+            conn = DriverManager.getConnection(DB_URL);
+
+        } catch (IOException | SQLException | RuntimeException e) {
+            throw new RuntimeException("Failed to load DB config or connect to database", e);
+        } catch (Exception e) {
+            throw new RuntimeException("Decryption failed", e);
+        }
     }
 
-    // Insert a CMAS score
     public void saveCMASScore(int scoreValue) throws SQLException {
         String sql = "INSERT INTO CMAS (score_date, score_type, score_value) VALUES (?, ?, ?)";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -27,7 +40,6 @@ public class DatabaseController {
         }
     }
 
-    // Retrieve all CMAS scores
     public List<String> getPastScores() throws SQLException {
         List<String> scores = new ArrayList<>();
         String sql = "SELECT * FROM CMAS ORDER BY score_date DESC";
@@ -44,7 +56,6 @@ public class DatabaseController {
         return scores;
     }
 
-    // Insert a new patient
     public void insertPatient(String patientId, String name) throws SQLException {
         String sql = "INSERT INTO Patients (PatientID, Name) VALUES (?, ?)";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -54,7 +65,6 @@ public class DatabaseController {
         }
     }
 
-    // Retrieve lab results for a patient
     public List<String> getLabResultsByPatient(String patientId) throws SQLException {
         List<String> results = new ArrayList<>();
         String sql = "SELECT * FROM LabResult WHERE PatientID = ?";
@@ -73,7 +83,6 @@ public class DatabaseController {
         return results;
     }
 
-    // Insert measurement
     public void insertMeasurement(String measurementId, String labResultId, String dateTime, String value) throws SQLException {
         String sql = "INSERT INTO Measurement (MeasurementID, LabResultID, DateTime, Value) VALUES (?, ?, ?, ?)";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -85,7 +94,6 @@ public class DatabaseController {
         }
     }
 
-    // Close DB connection
     public void close() throws SQLException {
         if (conn != null && !conn.isClosed()) {
             conn.close();
