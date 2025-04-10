@@ -1,6 +1,7 @@
-package com.cmas.main.database;
+package com.cmas.main.dao;
 
 import java.sql.*;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,18 +17,18 @@ public class DatabaseController {
     }
 
     // Insert a CMAS score
-    public void insertCMASScore(String scoreDate, String scoreType, int scoreValue) throws SQLException {
+    public void saveCMASScore(int scoreValue) throws SQLException {
         String sql = "INSERT INTO CMAS (score_date, score_type, score_value) VALUES (?, ?, ?)";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, scoreDate);
-            stmt.setString(2, scoreType);
+            stmt.setDate(1, Date.valueOf(LocalDate.now()));
+            stmt.setString(2, "total");
             stmt.setInt(3, scoreValue);
             stmt.executeUpdate();
         }
     }
 
     // Retrieve all CMAS scores
-    public List<String> getAllCMASScores() throws SQLException {
+    public List<String> getPastScores() throws SQLException {
         List<String> scores = new ArrayList<>();
         String sql = "SELECT * FROM CMAS ORDER BY score_date DESC";
         try (Statement stmt = conn.createStatement();
