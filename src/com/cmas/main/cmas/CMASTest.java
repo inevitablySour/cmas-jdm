@@ -1,4 +1,4 @@
-package com.cmas.main.pose;
+package com.cmas.main.cmas;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -10,15 +10,12 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 
 import com.google.gson.*;
-import java.io.*;
-import java.net.*;
-import java.util.*;
 
-import static com.cmas.main.pose.CMASScorer.*;
+import static com.cmas.main.cmas.CMASScorer.*;
 
 public class CMASTest {
 
-    //Getting the pose data
+    //Getting the cmas data
     private static final String PYTHON_POSE_URL = "http://localhost:8080/latest-frame";
     private static final int GET_READY_DELAY_MS = 5000;
     private static final int POLL_INTERVAL_MS = 200;
@@ -45,7 +42,7 @@ public class CMASTest {
 
         while (true) {
             JsonObject data = getPoseData();
-            JsonArray pose = data.getAsJsonArray("pose");
+            JsonArray pose = data.getAsJsonArray("cmas");
 
             if (pose == null || pose.size() < 1) continue;
 
@@ -84,7 +81,7 @@ public class CMASTest {
 
     public static int runLegRaiseTest() throws Exception {
         System.out.println("Get ready for Leg Raise Test...");
-        Thread.sleep(5000);  // 5-second prep delay
+          // 5-second prep delay
 
         double restY = -1;
         double footLength = -1;
@@ -96,7 +93,7 @@ public class CMASTest {
 
         while (System.currentTimeMillis() - testStart < maxDuration) {
             JsonObject data = getPoseData();
-            JsonArray pose = data.getAsJsonArray("pose");
+            JsonArray pose = data.getAsJsonArray("cmas");
 
             if (pose == null || pose.size() < 33) continue;
 
@@ -143,7 +140,7 @@ public class CMASTest {
 
     public static int runStraightLegLiftTest() throws Exception {
         System.out.println("Get ready for Straight Leg Lift Test...");
-        Thread.sleep(5000);  // 5-second delay for user to prepare
+          // 5-second delay for user to prepare
 
         double restY = -1;
         double footLength = -1;
@@ -158,7 +155,7 @@ public class CMASTest {
 
         while (System.currentTimeMillis() - testStart < timeout) {
             JsonObject data = getPoseData();
-            JsonArray pose = data.getAsJsonArray("pose");
+            JsonArray pose = data.getAsJsonArray("cmas");
 
             if (pose == null || pose.size() < 33) continue;
 
@@ -217,7 +214,7 @@ public class CMASTest {
 
     public static int runSupineToProneTest() throws Exception {
         System.out.println("Get ready for Supine to Prone Roll...");
-        Thread.sleep(5000);
+        
 
         boolean turnedSide = false;
         boolean freedArm = false;
@@ -232,7 +229,7 @@ public class CMASTest {
 
         while (System.currentTimeMillis() - timeStart < maxDuration) {
             JsonObject data = getPoseData();
-            JsonArray pose = data.getAsJsonArray("pose");
+            JsonArray pose = data.getAsJsonArray("cmas");
 
             if (pose == null || pose.size() < 25) continue;
 
@@ -290,7 +287,7 @@ public class CMASTest {
 
     public static int runSitUpTest() throws Exception {
         System.out.println("Get ready for Sit-Up Test. You’ll perform 6 sit-ups...");
-        Thread.sleep(5000);
+        
 
         int successfulSitUps = 0;
         int totalSitUps = 6;
@@ -305,7 +302,7 @@ public class CMASTest {
 
             while (System.currentTimeMillis() - start < sitUpTimeout) {
                 JsonObject data = getPoseData();
-                JsonArray pose = data.getAsJsonArray("pose");
+                JsonArray pose = data.getAsJsonArray("cmas");
                 if (pose == null || pose.size() < 25) continue;
 
                 double lShoulderY = pose.get(11).getAsJsonObject().get("y").getAsDouble();
@@ -347,7 +344,7 @@ public class CMASTest {
 
     public static int runSupineToSitTest() throws Exception {
         System.out.println("Get ready for Supine to Sit test...");
-        Thread.sleep(5000); // Preparation time
+         
 
         boolean transitioned = false;
         boolean sitting = false;
@@ -364,7 +361,7 @@ public class CMASTest {
 
         while (System.currentTimeMillis() - timeStart < maxTestDuration) {
             JsonObject data = getPoseData();
-            JsonArray pose = data.getAsJsonArray("pose");
+            JsonArray pose = data.getAsJsonArray("cmas");
             if (pose == null || pose.size() < 25) continue;
 
             double lShoulderY = pose.get(11).getAsJsonObject().get("y").getAsDouble();
@@ -430,7 +427,7 @@ public class CMASTest {
 
     public static int runArmRaiseTest() throws Exception {
         System.out.println("Get ready for Arm Raise Test...");
-        Thread.sleep(5000);
+        
 
         int result = 0;
 
@@ -439,7 +436,7 @@ public class CMASTest {
 
         while (System.currentTimeMillis() - start < timeout) {
             JsonObject data = getPoseData();
-            JsonArray pose = data.getAsJsonArray("pose");
+            JsonArray pose = data.getAsJsonArray("cmas");
             if (pose == null || pose.size() < 17) continue;
 
             JsonObject lShoulder = pose.get(11).getAsJsonObject();
@@ -487,7 +484,6 @@ public class CMASTest {
 
     public static int runArmRaiseDurationTest() throws Exception {
         System.out.println("Get ready for Arm Raise Duration Test...");
-        Thread.sleep(5000); // Allow time for patient to prepare
 
         long raiseStart = 0;
         long raiseEnd = 0;
@@ -498,7 +494,7 @@ public class CMASTest {
 
         while (System.currentTimeMillis() - startTime < timeout) {
             JsonObject data = getPoseData();
-            JsonArray pose = data.getAsJsonArray("pose");
+            JsonArray pose = data.getAsJsonArray("cmas");
 
             if (pose == null || pose.size() < 17) continue;
 
@@ -538,7 +534,6 @@ public class CMASTest {
 
     public static int runFloorSitTest() throws Exception {
         System.out.println("Get ready for Floor Sit test...");
-        Thread.sleep(5000); // Prep time
 
         boolean sittingDetected = false;
         boolean hesitant = false;
@@ -554,7 +549,7 @@ public class CMASTest {
 
         while (System.currentTimeMillis() - timeStart < maxDuration) {
             JsonObject data = getPoseData();
-            JsonArray pose = data.getAsJsonArray("pose");
+            JsonArray pose = data.getAsJsonArray("cmas");
 
             if (pose == null || pose.size() < 25) continue;
 
@@ -597,7 +592,6 @@ public class CMASTest {
 
     public static int runAllFoursTest() throws Exception {
         System.out.println("Get ready for All Fours Maneuver...");
-        Thread.sleep(5000); // Prep time
 
         boolean reachedAllFours = false;
         boolean raisedHead = false;
@@ -612,7 +606,7 @@ public class CMASTest {
 
         while (System.currentTimeMillis() - testStart < maxDuration) {
             JsonObject data = getPoseData();
-            JsonArray pose = data.getAsJsonArray("pose");
+            JsonArray pose = data.getAsJsonArray("cmas");
             if (pose == null || pose.size() < 29) continue;
 
             double lWristY = pose.get(15).getAsJsonObject().get("y").getAsDouble();
@@ -674,7 +668,7 @@ public class CMASTest {
 
     public static int runFloorRiseTest() throws Exception {
         System.out.println("Get ready for Floor Rise test...");
-        Thread.sleep(5000);
+        
 
         boolean usedChair = false;  // Not detectable without external reference
         boolean usedHands = false;
@@ -694,7 +688,7 @@ public class CMASTest {
 
         while (System.currentTimeMillis() - startTime < timeout) {
             JsonObject data = getPoseData();
-            JsonArray pose = data.getAsJsonArray("pose");
+            JsonArray pose = data.getAsJsonArray("cmas");
 
             if (pose == null || pose.size() < 29) continue;
 
@@ -750,7 +744,7 @@ public class CMASTest {
 
     public static int runChairRiseTest() throws Exception {
         System.out.println("Get ready for Chair Rise test...");
-        Thread.sleep(5000);
+        
 
         boolean usedChairSide = false; // inferred from hands behind or outside body
         boolean usedThighs = false;
@@ -770,7 +764,7 @@ public class CMASTest {
 
         while (System.currentTimeMillis() - startTime < timeout) {
             JsonObject data = getPoseData();
-            JsonArray pose = data.getAsJsonArray("pose");
+            JsonArray pose = data.getAsJsonArray("cmas");
 
             if (pose == null || pose.size() < 29) continue;
 
@@ -839,7 +833,7 @@ public class CMASTest {
 
     public static int runStoolStepTest() throws Exception {
         System.out.println("Get ready for Stool Step test...");
-        Thread.sleep(5000);
+        
 
         boolean attempted = false;
         boolean usedSupport = false;
@@ -851,7 +845,7 @@ public class CMASTest {
 
         while (System.currentTimeMillis() - startTime < timeout) {
             JsonObject data = getPoseData();
-            JsonArray pose = data.getAsJsonArray("pose");
+            JsonArray pose = data.getAsJsonArray("cmas");
             if (pose == null || pose.size() < 29) continue;
 
             double lAnkleY = pose.get(27).getAsJsonObject().get("y").getAsDouble();
@@ -903,7 +897,7 @@ public class CMASTest {
 
     public static int runPickUpObjectTest() throws Exception {
         System.out.println("Get ready for Pick-Up Object test...");
-        Thread.sleep(5000);
+        
 
         boolean attempted = false;
         boolean usedHeavySupport = false;
@@ -915,7 +909,7 @@ public class CMASTest {
 
         while (System.currentTimeMillis() - startTime < timeout) {
             JsonObject data = getPoseData();
-            JsonArray pose = data.getAsJsonArray("pose");
+            JsonArray pose = data.getAsJsonArray("cmas");
             if (pose == null || pose.size() < 29) continue;
 
             double lWristY = pose.get(15).getAsJsonObject().get("y").getAsDouble();

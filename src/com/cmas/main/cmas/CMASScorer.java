@@ -1,9 +1,4 @@
-package com.cmas.main.pose;
-
-import com.google.gson.*;
-import java.io.*;
-import java.net.*;
-import java.util.*;
+package com.cmas.main.cmas;
 
 
 public class CMASScorer {
