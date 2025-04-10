@@ -18,7 +18,7 @@ def capture_loop():
     global latest_frame_data
 
     if not cap.isOpened():
-        print("❌ ERROR: Could not open webcam.")
+        print("ERROR: Could not open webcam.")
         return
 
     while True:
