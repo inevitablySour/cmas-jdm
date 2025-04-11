@@ -12,10 +12,8 @@ import org.jfree.data.category.DefaultCategoryDataset;
 import javax.swing.*;
 import java.awt.*;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 
 public class DoctorPanel extends JFrame {
     private final DatabaseController controller;
@@ -30,13 +28,11 @@ public class DoctorPanel extends JFrame {
         setLocationRelativeTo(null);
 
         JTabbedPane tabbedPane = new JTabbedPane();
-
         tabbedPane.addTab("Patient Overview", createPatientSummaryPanel());
 
         add(tabbedPane);
         setVisible(true);
     }
-
 
     private JPanel createPatientSummaryPanel() {
         JPanel panel = new JPanel(new BorderLayout());
@@ -52,7 +48,7 @@ public class DoctorPanel extends JFrame {
         searchButton.setFont(new Font("SansSerif", Font.BOLD, 13));
 
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
-        topPanel.add(new JLabel("Patient ID:"));
+        topPanel.add(new JLabel("Patient Name:"));
         topPanel.add(patientField);
         topPanel.add(searchButton);
         topPanel.add(detailedCheckbox);
@@ -81,16 +77,47 @@ public class DoctorPanel extends JFrame {
         finalScroll.getVerticalScrollBar().setUnitIncrement(16);
 
         searchButton.addActionListener(e -> {
-            String patientId = patientField.getText().trim();
+            String inputName = patientField.getText().trim();
             boolean detailed = detailedCheckbox.isSelected();
             outputArea.setText("");
             chartContainer.removeAll();
 
             try {
-                Map<String, Object> data = controller.getFullPatientOverview(patientId, detailed);
+                List<Map<String, String>> matches = controller.findPatientsByName(inputName);
+
+                if (matches.isEmpty()) {
+                    outputArea.setText("No patient found with that name.");
+                    return;
+                }
+
+                String selectedPatientId;
+
+                if (matches.size() == 1) {
+                    selectedPatientId = matches.get(0).get("id");
+                } else {
+                    String[] options = matches.stream()
+                            .map(p -> String.format("Name: %s | ID: %s | Group: %s",
+                                    p.get("name"), p.get("id"), p.getOrDefault("group", "Unknown")))
+                            .toArray(String[]::new);
+
+                    String selection = (String) JOptionPane.showInputDialog(
+                            this,
+                            "Multiple patients found. Select one:",
+                            "Select Patient",
+                            JOptionPane.PLAIN_MESSAGE,
+                            null,
+                            options,
+                            options[0]);
+
+                    if (selection == null) return;
+
+                    selectedPatientId = selection.substring(selection.indexOf("ID: ") + 4, selection.indexOf(" | Group")).trim();
+                }
+
+                Map<String, Object> data = controller.getFullPatientOverview(selectedPatientId, detailed);
 
                 String name = (String) data.get("name");
-                outputArea.append("Patient ID: " + patientId + "\n");
+                outputArea.append("Patient ID: " + selectedPatientId + "\n");
                 outputArea.append("Patient Name: " + (name.isEmpty() ? "(not found)" : name) + "\n\n");
 
                 List<Map<String, String>> meds = (List<Map<String, String>>) data.get("medications");
@@ -101,7 +128,6 @@ public class DoctorPanel extends JFrame {
                 } else {
                     outputArea.append("Measurement Records:\n");
 
-                    // Group by result name
                     Map<String, List<Map<String, String>>> grouped = new HashMap<>();
                     for (Map<String, String> entry : meds) {
                         String nameKey = entry.get("name");
@@ -134,7 +160,6 @@ public class DoctorPanel extends JFrame {
                             outputArea.append(line + "\n");
                         }
 
-                        // Chart if more than one measurement
                         if (entries.size() > 1) {
                             DefaultCategoryDataset dataset = new DefaultCategoryDataset();
                             String unit = entries.get(0).get("unit");
@@ -154,29 +179,19 @@ public class DoctorPanel extends JFrame {
                                     dataset
                             );
 
-                            // Customize renderer to show points
-                            // Customize renderer to show points
                             CategoryPlot plot = chart.getCategoryPlot();
                             LineAndShapeRenderer renderer = new LineAndShapeRenderer();
-
-                            // Enable dots + lines
                             renderer.setDefaultShapesVisible(true);
                             renderer.setDefaultLinesVisible(true);
-
-                            // Shape config
                             renderer.setDefaultShape(new java.awt.geom.Ellipse2D.Double(-3.0, -3.0, 6.0, 6.0));
                             renderer.setDefaultPaint(Color.BLUE);
-
-
                             plot.setRenderer(renderer);
 
                             ChartPanel chartPanel = new ChartPanel(chart);
                             chartPanel.setPreferredSize(new Dimension(800, 300));
                             chartPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-
                             chartContainer.add(chartPanel);
-
                         }
                     }
                 }
@@ -195,23 +210,19 @@ public class DoctorPanel extends JFrame {
         return panel;
     }
 
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            try {
-                // Set modern FlatLaf theme
-                FlatLightLaf.setup(); // or FlatDarculaLaf.setup() for dark mode
-
-                // Optional: tweak component rounding
-                UIManager.put("TextComponent.arc", 10);
-                UIManager.put("Button.arc", 10);
-                UIManager.put("Component.arc", 10);
-                UIManager.put("ProgressBar.arc", 10);
-
-                // Launch the DoctorPanel UI
-                new DoctorPanel(new DatabaseController());
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
-    }
+//    public static void main(String[] args) {
+//        SwingUtilities.invokeLater(() -> {
+//            try {
+//                FlatLightLaf.setup();
+//                UIManager.put("TextComponent.arc", 10);
+//                UIManager.put("Button.arc", 10);
+//                UIManager.put("Component.arc", 10);
+//                UIManager.put("ProgressBar.arc", 10);
+//
+//                new DoctorPanel(new DatabaseController());
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//            }
+//        });
+//    }
 }

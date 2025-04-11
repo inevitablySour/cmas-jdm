@@ -13,28 +13,28 @@ public class CMASDashboard extends JFrame {
     private final DatabaseController db = new DatabaseController();
     private ResultsDashboardPanel resultsPanel = null;
     private static String PatientID = "";
-    public static void main(String[] args) {
-        try {
-            FlatLightLaf.setup();
-            UIManager.put("Button.arc", 20);
-            UIManager.put("Component.arc", 10);
-            UIManager.put("CheckBox.icon.selectedBackground", new Color(60, 120, 200));
-            UIManager.put("CheckBox.icon.checkmarkColor", Color.WHITE);
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-
-        PythonServerController.startServer();
-
-        SwingUtilities.invokeLater(() -> {
-            try {
-                CMASDashboard dashboard = new CMASDashboard(PatientID);
-                dashboard.setVisible(true);
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-        });
-    }
+//    public static void main(String[] args) {
+//        try {
+//            FlatLightLaf.setup();
+//            UIManager.put("Button.arc", 20);
+//            UIManager.put("Component.arc", 10);
+//            UIManager.put("CheckBox.icon.selectedBackground", new Color(60, 120, 200));
+//            UIManager.put("CheckBox.icon.checkmarkColor", Color.WHITE);
+//        } catch (Exception ex) {
+//            ex.printStackTrace();
+//        }
+//
+//        PythonServerController.startServer();
+//
+//        SwingUtilities.invokeLater(() -> {
+//            try {
+//                CMASDashboard dashboard = new CMASDashboard(PatientID);
+//                dashboard.setVisible(true);
+//            } catch (SQLException e) {
+//                throw new RuntimeException(e);
+//            }
+//        });
+//    }
 
     public CMASDashboard(String PatientID) throws SQLException {
         setTitle("CMAS Assessment System");

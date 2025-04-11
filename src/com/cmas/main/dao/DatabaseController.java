@@ -1,8 +1,8 @@
 package com.cmas.main.dao;
 
-import com.cmas.main.model.ConditionGroupAggregate;
-import com.cmas.main.model.MeasurementAggregate;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
 import java.sql.*;
 import java.sql.Date;
@@ -255,6 +255,33 @@ public class DatabaseController {
         return results;
     }
 
+    public List<Map<String, String>> findPatientsByName(String name) throws SQLException {
+        List<Map<String, String>> results = new ArrayList<>();
+
+        String sql = """
+            SELECT p.PatientID, p.Name, MIN(g.GroupName) AS GroupName
+            FROM Patients p
+            LEFT JOIN LabResults_EN l ON p.PatientID = l.PatientID
+            LEFT JOIN LabResultGroup g ON l.LabResultGroupID = g.LabResultGroupID
+            WHERE p.Name = ?
+            GROUP BY p.PatientID, p.Name
+        """;
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, name);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                Map<String, String> patient = new HashMap<>();
+                patient.put("id", rs.getString("PatientID"));
+                patient.put("name", rs.getString("Name"));
+                patient.put("group", rs.getString("GroupName"));
+                results.add(patient);
+            }
+        }
+
+        return results;
+    }
+
     public List<String> getCMASScoresByPatient(String patientId) throws SQLException {
         List<String> scores = new ArrayList<>();
 
@@ -276,10 +303,73 @@ public class DatabaseController {
         return scores;
     }
 
+    //Setup method used to map patient IDs with no name to randomly generated names
+
+//    public void mapPatientIdsToNames(String csvPath) throws Exception {
+//        // Step 1: Fetch all unique PatientIDs from the database
+//        Set<String> patientIds = new LinkedHashSet<>();
+//
+//        String fetchSql = "SELECT DISTINCT PatientID FROM LabResults_EN WHERE PatientID IS NOT NULL AND PatientID != ''";
+//        try (PreparedStatement stmt = conn.prepareStatement(fetchSql);
+//             ResultSet rs = stmt.executeQuery()) {
+//            while (rs.next()) {
+//                patientIds.add(rs.getString("PatientID"));
+//            }
+//        }
+//
+//        System.out.println("Found " + patientIds.size() + " unique patient IDs.");
+//
+//        // Step 2: Read names from the CSV file
+//        List<String> names = new ArrayList<>();
+//        try (BufferedReader reader = new BufferedReader(new FileReader(csvPath))) {
+//            String line;
+//            boolean isFirstLine = true;
+//            while ((line = reader.readLine()) != null) {
+//                if (isFirstLine) {
+//                    isFirstLine = false; // skip header
+//                    continue;
+//                }
+//
+//                String[] parts = line.split(",");
+//                if (parts.length < 2) continue;
+//
+//                String firstName = parts[0].trim().replaceAll("^\"|\"$", "");
+//                String lastName = parts[1].trim().replaceAll("^\"|\"$", "");
+//                String fullName = firstName + " " + lastName;
+//                if (!fullName.isBlank()) {
+//                    names.add(fullName);
+//                }
+//            }
+//        }
+
+//        if (names.size() < patientIds.size()) {
+//            throw new RuntimeException("Not enough names in the CSV for the number of unique patient IDs.");
+//        }
+//
+//        // Step 3: Map and insert
+//        Iterator<String> idIterator = patientIds.iterator();
+//        Iterator<String> nameIterator = names.iterator();
+//
+//        String insertSql = "INSERT INTO Patients (PatientID, Name) VALUES (?, ?)";
+//        try (PreparedStatement insertStmt = conn.prepareStatement(insertSql)) {
+//            while (idIterator.hasNext() && nameIterator.hasNext()) {
+//                String patientId = idIterator.next();
+//                String name = nameIterator.next();
+//
+//                insertStmt.setString(1, patientId);
+//                insertStmt.setString(2, name);
+//                insertStmt.executeUpdate();
+//            }
+//        }
+//
+//        System.out.println("Mapped and inserted " + patientIds.size() + " patients.");
+//    }
+
 
     public void close() throws SQLException {
         if (conn != null && !conn.isClosed()) {
             conn.close();
         }
     }
+
 }
