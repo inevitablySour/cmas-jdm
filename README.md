@@ -1,4 +1,4 @@
-# CMAS AI Motion Tracking System
+# CMAS Motion Tracking System
 
 ## Overview
 The CMAS Motion Tracking System is a cross-platform application built in Java and Python, designed to help doctors remotely assess motor function in children diagnosed with Juvenile Dermatomyositis (JDM). The system automates the Children’s Myositis Assessment Scale (CMAS) scoring process by combining pose estimation, video capture, and biomarker analysis within an intuitive graphical interface for doctors and patients.
