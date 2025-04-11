@@ -11,13 +11,13 @@ The **CMAS AI Motion Tracking System** is a Java-based application that helps do
 - **Data Storage & Analysis**: Scores and biomarker data are stored in an SQLite database for tracking disease progression.
 
 ##  Tech Stack
-| Component            | Technology         |
-|---------------------|-------------------|
-| **Language**       | Java |
-| **Image Recognition** | OpenCV |
-| **Pose Detection** | TensorFlow + MediaPipe |
-| **Database**       | SQLite |
-| **GUI**           | JavaFX |
+| Component            | Technology             |
+|---------------------|------------------------|
+| **Language**       | Java                   |
+| **Image Recognition** | OpenCV                 |
+| **Pose Detection** | MediaPipe |
+| **Database**       | MYSQL                  |
+| **GUI**           | Swing                  |
 
 ## How It Works
 ### Patient Workflow (Children’s Interface)
@@ -37,11 +37,28 @@ The **CMAS AI Motion Tracking System** is a Java-based application that helps do
 4. **Export Data**: Allows generating **progress reports for medical records**.
 
 ## Installation & Setup
-### Prerequisites:
-- Java (JDK 17 or later)
-- OpenCV for Java
-- TensorFlow for Java (PoseNet or MediaPipe)
-- SQLite for database management
+### Java Dependencies:
+- Java (JDK 23)
+- Flatlaf
+- Jfree Chart
+- Google GSON
+- MYSQL JDBC
+- Jackson Databind
+- Apache HTTP Mime
+- Appache HTTP Client
+
+Initialize your project as a Maven project and use the **pom.xml** file to install the necessary dependencies.
+
+### Python Dependencies:
+- Mediapipe
+- OpenCV
+- Flask
+
+Run the following command in your project command line to install the dependencies.
+
+```
+pip install mediapipe opencv-python flask
+```
 
 
 
