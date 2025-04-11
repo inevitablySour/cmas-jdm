@@ -23,16 +23,16 @@ def explain_permission_issue():
     print("This may be due to missing camera permissions.\n")
 
     if os_name == "Darwin":  # macOS
-        print("👉 Go to: System Settings > Privacy & Security > Camera")
-        print("✅ Ensure Python or Terminal has camera access.")
+        print("Go to: System Settings > Privacy & Security > Camera")
+        print("Ensure Python or Terminal has camera access.")
     elif os_name == "Windows":
-        print("👉 Go to: Settings > Privacy > Camera")
-        print("✅ Ensure 'Camera access' and 'Allow desktop apps to access your camera' are ON.")
+        print("Go to: Settings > Privacy > Camera")
+        print("Ensure 'Camera access' and 'Allow desktop apps to access your camera' are ON.")
     elif os_name == "Linux":
-        print("⚠️ Camera permissions are typically managed by your window manager.")
-        print("✅ Make sure no other application is locking the camera.")
+        print("Camera permissions are typically managed by your window manager.")
+        print("Make sure no other application is locking the camera.")
     else:
-        print("⚠️ Unknown OS. Please check your system's camera privacy settings.")
+        print("Unknown OS. Please check your system's camera privacy settings.")
 
     print("\nExiting due to camera access failure.")
     time.sleep(5)
