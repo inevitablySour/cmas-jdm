@@ -97,6 +97,19 @@ public class DatabaseController {
         }
     }
 
+    public String getFirstLabResultIdForPatient(String patientId) throws SQLException {
+        String sql = "SELECT LabResultID FROM LabResults_EN WHERE PatientID = ? LIMIT 1";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, patientId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("LabResultID");
+                }
+            }
+        }
+        return null;
+    }
+
     // Fetch CMAS scores with date and type
     public List<Map<String, Object>> getAllCMASScores() throws SQLException {
         List<Map<String, Object>> result = new ArrayList<>();
@@ -301,6 +314,38 @@ public class DatabaseController {
         }
 
         return scores;
+    }
+
+    public List<Map<String, String>> getAllLabResultGroups() throws SQLException {
+        List<Map<String, String>> results = new ArrayList<>();
+        String sql = "SELECT LabResultGroupID, GroupName FROM LabResultGroup";
+        try (PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                Map<String, String> group = new HashMap<>();
+                group.put("id", rs.getString("LabResultGroupID"));
+                group.put("name", rs.getString("GroupName"));
+                results.add(group);
+            }
+        }
+        return results;
+    }
+
+    public void insertLabResultEN(String labResultId, String groupId, String patientId, String resultName, String resultNameEng, String unit) throws SQLException {
+        String sql = "INSERT INTO LabResults_EN (LabResultID, LabResultGroupID, PatientID, ResultName, ResultName_English, Unit) VALUES (?, ?, ?, ?, ?, ?)";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, labResultId);
+            stmt.setString(2, groupId);
+            stmt.setString(3, patientId);
+            stmt.setString(4, resultName);
+            stmt.setString(5, resultNameEng);
+            if (unit != null) {
+                stmt.setString(6, unit);
+            } else {
+                stmt.setNull(6, java.sql.Types.VARCHAR);
+            }
+            stmt.executeUpdate();
+        }
     }
 
     //Setup method used to map patient IDs with no name to randomly generated names
