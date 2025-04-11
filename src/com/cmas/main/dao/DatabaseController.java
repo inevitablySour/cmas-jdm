@@ -1,11 +1,13 @@
 package com.cmas.main.dao;
 
+import com.cmas.main.model.ConditionGroupAggregate;
+import com.cmas.main.model.MeasurementAggregate;
+
 import java.io.IOException;
 import java.sql.*;
+import java.sql.Date;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 
 public class DatabaseController {
     private static final String DB_URL;
@@ -23,6 +25,7 @@ public class DatabaseController {
 
             conn = DriverManager.getConnection(DB_URL);
 
+
         } catch (IOException | SQLException | RuntimeException e) {
             throw new RuntimeException("Failed to load DB config or connect to database", e);
         } catch (Exception e) {
@@ -30,8 +33,8 @@ public class DatabaseController {
         }
     }
 
-    public void saveCMASScore(int scoreValue) throws SQLException {
-        String sql = "INSERT INTO CMAS (score_date, score_type, score_value) VALUES (?, ?, ?)";
+    public void saveCMASScore(String patientID,int scoreValue) throws SQLException {
+        String sql = "INSERT INTO CMAS (patientID, score_date, score_type, score_value) VALUES (?, ?, ?)";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setDate(1, Date.valueOf(LocalDate.now()));
             stmt.setString(2, "total");
@@ -93,6 +96,186 @@ public class DatabaseController {
             stmt.executeUpdate();
         }
     }
+
+    // Fetch CMAS scores with date and type
+    public List<Map<String, Object>> getAllCMASScores() throws SQLException {
+        List<Map<String, Object>> result = new ArrayList<>();
+        String sql = "SELECT * FROM CMAS ORDER BY score_date DESC";
+        try (Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                Map<String, Object> row = new HashMap<>();
+                row.put("date", rs.getDate("score_date"));
+                row.put("type", rs.getString("score_type"));
+                row.put("value", rs.getInt("score_value"));
+                result.add(row);
+            }
+        }
+        return result;
+    }
+
+    // Fetch measurements joined with result names and units
+    public List<Map<String, String>> getDetailedLabMeasurements(String patientId) throws SQLException {
+        List<Map<String, String>> data = new ArrayList<>();
+        String sql = """
+        SELECT lr.ResultName, lr.Unit, m.DateTime, m.Value
+        FROM Measurement m
+        JOIN LabResult lr ON lr.LabResultID = m.LabResultID
+        WHERE lr.PatientID = ?
+        ORDER BY m.DateTime DESC
+    """;
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, patientId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, String> entry = new HashMap<>();
+                    entry.put("name", rs.getString("ResultName"));
+                    entry.put("unit", rs.getString("Unit"));
+                    entry.put("value", rs.getString("Value"));
+                    entry.put("datetime", rs.getString("DateTime"));
+                    data.add(entry);
+                }
+            }
+        }
+        return data;
+    }
+
+    // Get basic patient info
+    public String getPatientName(String patientId) throws SQLException {
+        String sql = "SELECT Name FROM Patients WHERE PatientID = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, patientId);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getString("Name");
+            }
+        }
+        return null;
+    }
+
+
+    // Get CMAS scores for a specific patient (if CMAS is later tied to patient)
+    public List<Map<String, Object>> getCMASForPatient() throws SQLException {
+        String sql = "SELECT * FROM CMAS ORDER BY score_date DESC";
+        List<Map<String, Object>> scores = new ArrayList<>();
+        try (PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                Map<String, Object> row = new HashMap<>();
+                row.put("date", rs.getDate("score_date"));
+                row.put("type", rs.getString("score_type"));
+                row.put("value", rs.getInt("score_value"));
+                scores.add(row);
+            }
+        }
+        return scores;
+    }
+
+    public Map<String, Object> getFullPatientOverview(String patientId, boolean detailed) throws SQLException {
+        Map<String, Object> data = new HashMap<>();
+
+        // Patient name
+        String sqlPatient = "SELECT Name FROM Patients WHERE PatientID = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sqlPatient)) {
+            stmt.setString(1, patientId.trim());
+            ResultSet rs = stmt.executeQuery();
+            data.put("name", rs.next() ? rs.getString("Name") : "");
+        }
+
+        // LabResults_EN entries
+        List<Map<String, String>> labResults = new ArrayList<>();
+        String sqlLab = """
+        SELECT LabResultID, LabResultGroupID, ResultName_English, Unit
+        FROM LabResults_EN
+        WHERE PatientID = ?
+    """;
+
+        try (PreparedStatement stmt = conn.prepareStatement(sqlLab)) {
+            stmt.setString(1, patientId.trim());
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                Map<String, String> result = new HashMap<>();
+                result.put("labResultId", rs.getString("LabResultID"));
+                result.put("labResultGroupId", rs.getString("LabResultGroupID"));
+                result.put("resultNameEnglish", rs.getString("ResultName_English"));
+                result.put("unit", rs.getString("Unit"));
+                labResults.add(result);
+            }
+        }
+
+        // Get group names for all modes
+        Map<String, String> groupIdToName = new HashMap<>();
+        String sqlGroups = "SELECT LabResultGroupID, GroupName FROM LabResultGroup";
+        try (Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sqlGroups)) {
+            while (rs.next()) {
+                groupIdToName.put(rs.getString("LabResultGroupID"), rs.getString("GroupName"));
+            }
+        }
+
+        // Measurements
+        List<Map<String, String>> measurementEntries = new ArrayList<>();
+
+        for (Map<String, String> result : labResults) {
+            String labResultId = result.get("labResultId");
+            String groupId = result.get("labResultGroupId");
+
+            String sqlMeas = "SELECT DateTime, Value FROM Measurement WHERE LabResultID = ? ORDER BY DateTime DESC";
+            try (PreparedStatement stmt = conn.prepareStatement(sqlMeas)) {
+                stmt.setString(1, labResultId);
+                ResultSet rs = stmt.executeQuery();
+                while (rs.next()) {
+                    Map<String, String> row = new HashMap<>();
+                    row.put("datetime", rs.getString("DateTime"));
+                    row.put("value", rs.getString("Value"));
+                    row.put("unit", result.get("unit"));
+                    row.put("name", result.get("resultNameEnglish"));
+                    row.put("labResultId", detailed ? labResultId : null);
+                    row.put("groupId", groupId);
+                    measurementEntries.add(row);
+                }
+            }
+        }
+
+        data.put("medications", measurementEntries);
+        data.put("groupNames", groupIdToName);
+        return data;
+    }
+
+    public List<String[]> getMatchingPatientsByName(String name) throws Exception {
+        List<String[]> results = new ArrayList<>();
+        String sql = "SELECT PatientID, Name FROM Patients WHERE Name = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, name);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                results.add(new String[]{rs.getString("PatientID"), rs.getString("Name")});
+            }
+        }
+        return results;
+    }
+
+    public List<String> getCMASScoresByPatient(String patientId) throws SQLException {
+        List<String> scores = new ArrayList<>();
+
+        String sql = "SELECT score_date, score_type, score_value FROM CMAS WHERE PatientID = ? ORDER BY score_date DESC";
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, patientId);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                String entry = String.format("Date: %s | Type: %s | Value: %d",
+                        rs.getString("score_date"),
+                        rs.getString("score_type"),
+                        rs.getInt("score_value"));
+                scores.add(entry);
+            }
+        }
+
+        return scores;
+    }
+
 
     public void close() throws SQLException {
         if (conn != null && !conn.isClosed()) {

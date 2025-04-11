@@ -1,4 +1,4 @@
-package com.cmas.main.gui;
+package com.cmas.main.gui.patient;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;

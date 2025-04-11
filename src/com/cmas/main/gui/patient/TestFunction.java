@@ -1,4 +1,4 @@
-package com.cmas.main.gui;
+package com.cmas.main.gui.patient;
 
 @FunctionalInterface
 public interface TestFunction {

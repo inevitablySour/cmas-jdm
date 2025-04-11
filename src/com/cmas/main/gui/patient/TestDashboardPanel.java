@@ -1,6 +1,7 @@
-package com.cmas.main.gui;
+package com.cmas.main.gui.patient;
 
 import com.cmas.main.cmas.CMASTest;
+import com.cmas.main.gui.patient.CMASDashboard;
 import com.cmas.main.dao.DatabaseController;
 
 import javax.swing.*;
@@ -67,7 +68,7 @@ public class TestDashboardPanel extends JPanel {
                         "CMAS Summary", JOptionPane.INFORMATION_MESSAGE);
 
                 // Save score
-                db.saveCMASScore(total);
+                db.saveCMASScore(CMASDashboard.getPatientID(), total);
 
                 // Trigger UI refresh
                 if (onAllTestsCompleted != null) {

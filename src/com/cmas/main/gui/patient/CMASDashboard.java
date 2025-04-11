@@ -1,4 +1,4 @@
-package com.cmas.main.gui;
+package com.cmas.main.gui.patient;
 
 import com.cmas.main.dao.DatabaseController;
 import com.cmas.main.imageProcessing.PythonServerController;
@@ -9,12 +9,10 @@ import java.awt.*;
 import java.sql.SQLException;
 import java.util.List;
 
-import static com.cmas.main.imageProcessing.PythonServerController.*;
-
 public class CMASDashboard extends JFrame {
     private final DatabaseController db = new DatabaseController();
-    private final ResultsDashboardPanel resultsPanel = new ResultsDashboardPanel(db.getPastScores());
-
+    private ResultsDashboardPanel resultsPanel = null;
+    private static String PatientID = "";
     public static void main(String[] args) {
         try {
             FlatLightLaf.setup();
@@ -30,7 +28,7 @@ public class CMASDashboard extends JFrame {
 
         SwingUtilities.invokeLater(() -> {
             try {
-                CMASDashboard dashboard = new CMASDashboard();
+                CMASDashboard dashboard = new CMASDashboard(PatientID);
                 dashboard.setVisible(true);
             } catch (SQLException e) {
                 throw new RuntimeException(e);
@@ -38,10 +36,12 @@ public class CMASDashboard extends JFrame {
         });
     }
 
-    public CMASDashboard() throws SQLException {
+    public CMASDashboard(String PatientID) throws SQLException {
         setTitle("CMAS Assessment System");
         setSize(1000, 700);
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+        this.PatientID = PatientID;
+        resultsPanel = new ResultsDashboardPanel(db.getCMASScoresByPatient(PatientID));
 
         addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
@@ -71,5 +71,9 @@ public class CMASDashboard extends JFrame {
 
         setLayout(new BorderLayout());
         add(tabs, BorderLayout.CENTER);
+    }
+
+    public static String getPatientID() {
+        return PatientID;
     }
 }
