@@ -167,21 +167,22 @@ public class DatabaseController {
     }
 
 
-    // Get CMAS scores for a specific patient (if CMAS is later tied to patient)
-    public List<Map<String, Object>> getCMASForPatient() throws SQLException {
-        String sql = "SELECT * FROM CMAS ORDER BY score_date DESC";
-        List<Map<String, Object>> scores = new ArrayList<>();
-        try (PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
-            while (rs.next()) {
-                Map<String, Object> row = new HashMap<>();
-                row.put("date", rs.getDate("score_date"));
-                row.put("type", rs.getString("score_type"));
-                row.put("value", rs.getInt("score_value"));
-                scores.add(row);
+    // Get CMAS scores for a specific patient
+    public List<Map<String, Object>> getCmasScoresForPatient(String patientId) throws SQLException {
+        List<Map<String, Object>> results = new ArrayList<>();
+        String sql = "SELECT score_date, score_value FROM CMAS WHERE PatientID = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, patientId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, Object> row = new HashMap<>();
+                    row.put("date", rs.getString("score_date"));
+                    row.put("score", rs.getInt("score_value"));
+                    results.add(row);
+                }
             }
         }
-        return scores;
+        return results;
     }
 
     public Map<String, Object> getFullPatientOverview(String patientId, boolean detailed) throws SQLException {

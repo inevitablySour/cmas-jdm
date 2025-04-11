@@ -34,6 +34,7 @@ public class DoctorPanel extends JFrame {
         tabbedPane.addTab("Register Patient", createPatientRegistrationPanel());
         tabbedPane.addTab("Assign Patient Information", createAssignLabGroupPanel());
         tabbedPane.addTab("Register Measurement", createMeasurementEntryPanel());
+        tabbedPane.addTab("CMAS Results", createCmasViewerPanel());
 
         add(tabbedPane);
         setVisible(true);
@@ -526,6 +527,137 @@ public class DoctorPanel extends JFrame {
         panel.add(new JScrollPane(outputArea), BorderLayout.SOUTH);
 
         return panel;
+    }
+
+    private JPanel createCmasViewerPanel() {
+        JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        mainPanel.setBackground(Color.WHITE);
+
+        Font textFont = new Font("JetBrains Mono", Font.PLAIN, 13);
+
+        JTextField nameField = new JTextField(20);
+        JComboBox<String> patientSelector = new JComboBox<>();
+        JTextArea scoreArea = new JTextArea(10, 30);
+        scoreArea.setFont(textFont);
+        scoreArea.setEditable(false);
+        scoreArea.setMargin(new Insets(10, 10, 10, 10));
+
+        JPanel chartPanelContainer = new JPanel(new BorderLayout());
+        chartPanelContainer.setPreferredSize(new Dimension(500, 300));
+        chartPanelContainer.setBackground(Color.WHITE);
+
+        JButton searchBtn = new JButton("Find Patients");
+        JButton viewBtn = new JButton("View Scores");
+
+        // Top search controls
+        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        topPanel.add(new JLabel("Patient Name:"));
+        topPanel.add(nameField);
+        topPanel.add(searchBtn);
+        topPanel.add(patientSelector);
+        topPanel.add(viewBtn);
+
+        // Combine text area and chart in a horizontal split pane
+        JScrollPane textScroll = new JScrollPane(scoreArea);
+        textScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, textScroll, chartPanelContainer);
+        splitPane.setResizeWeight(0.5); // balance text/chart size
+        splitPane.setDividerSize(8);
+        splitPane.setBorder(null);
+
+        mainPanel.add(topPanel, BorderLayout.NORTH);
+        mainPanel.add(splitPane, BorderLayout.CENTER);
+
+        // Search patients
+        searchBtn.addActionListener(e -> {
+            patientSelector.removeAllItems();
+            chartPanelContainer.removeAll();
+            scoreArea.setText("");
+
+            String name = nameField.getText().trim();
+            try {
+                List<Map<String, String>> matches = controller.findPatientsByName(name);
+                if (matches.isEmpty()) {
+                    scoreArea.setText("No matching patients found.");
+                } else {
+                    for (Map<String, String> p : matches) {
+                        patientSelector.addItem(p.get("name") + " (" + p.get("id") + ")");
+                    }
+                    scoreArea.setText("Select the correct patient from the dropdown.");
+                }
+            } catch (Exception ex) {
+                scoreArea.setText("Error: " + ex.getMessage());
+                ex.printStackTrace();
+            }
+        });
+
+        // View CMAS data
+        viewBtn.addActionListener(e -> {
+            chartPanelContainer.removeAll();
+            scoreArea.setText("");
+
+            if (patientSelector.getSelectedItem() == null) {
+                scoreArea.setText("No patient selected.");
+                return;
+            }
+
+            String selected = (String) patientSelector.getSelectedItem();
+            String patientId = selected.substring(selected.indexOf("(") + 1, selected.indexOf(")"));
+
+            try {
+                List<Map<String, Object>> scores = controller.getCmasScoresForPatient(patientId);
+                if (scores.isEmpty()) {
+                    scoreArea.setText("No CMAS scores found for this patient.");
+                    return;
+                }
+
+                scores.sort(Comparator.comparing(m -> (String) m.get("date"))); // ascending for graph
+
+                DefaultCategoryDataset dataset = new DefaultCategoryDataset();
+                List<String> scoreLines = new ArrayList<>();
+
+                for (Map<String, Object> row : scores) {
+                    String date = (String) row.get("date");
+                    int score = (int) row.get("score");
+                    dataset.addValue(score, "CMAS Score", date);
+                    scoreLines.add(String.format("Date: %s | Score: %d", date, score));
+                }
+
+                scoreLines.sort(Comparator.reverseOrder());
+
+                scoreArea.append("Patient ID: " + patientId + "\n\nCMAS Scores:\n");
+                scoreLines.forEach(line -> scoreArea.append(line + "\n"));
+
+                JFreeChart chart = ChartFactory.createLineChart(
+                        "CMAS Score Over Time",
+                        "Date",
+                        "Score",
+                        dataset
+                );
+
+                LineAndShapeRenderer renderer = new LineAndShapeRenderer();
+                renderer.setDefaultShapesVisible(true);
+                renderer.setDefaultLinesVisible(true);
+                renderer.setDefaultShape(new java.awt.geom.Ellipse2D.Double(-3.0, -3.0, 6.0, 6.0));
+                renderer.setSeriesPaint(0, Color.RED);
+                chart.getCategoryPlot().setRenderer(renderer);
+
+                ChartPanel chartPanel = new ChartPanel(chart);
+                chartPanel.setPreferredSize(new Dimension(500, 300));
+                chartPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+                chartPanelContainer.add(chartPanel, BorderLayout.CENTER);
+
+                chartPanelContainer.revalidate();
+                chartPanelContainer.repaint();
+
+            } catch (Exception ex) {
+                scoreArea.setText("Error retrieving CMAS scores: " + ex.getMessage());
+                ex.printStackTrace();
+            }
+        });
+
+        return mainPanel;
     }
 
 //    public static void main(String[] args) {
